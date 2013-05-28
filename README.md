@@ -5,7 +5,7 @@ A script to trigger Philip Hue lightbulbs based on triggered incidents from Page
 Dependencies
 ------------
  * requests (http://python-requests.org)
- * phue (https://github.com/studioimaginaire/phue) (bundled)
+ * phue (https://github.com/studioimaginaire/phue)
 
 Usage
 -----
