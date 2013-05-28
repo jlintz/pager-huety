@@ -1,6 +1,6 @@
 Pager-Huety
 ===============================
-A script to trigger Philip Hue lightbulbs based on triggered incidents from PageDuty.
+A script to trigger Philip Hue lightbulbs based on triggered incidents from PagerDuty.
 
 Dependencies
 ------------
