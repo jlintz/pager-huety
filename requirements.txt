@@ -1,2 +1,2 @@
-requests==1.0.3
-phue==0.7
+requests==2.19.1
+phue==1.0
