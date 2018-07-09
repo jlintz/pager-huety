@@ -1,17 +1,19 @@
-#!/usr/bin/env python
-# Author: Justin Lintz <jlintz@gmail.com>
-#
-# Module to control Philips Hue light bulbs
-# based on Pager Duty alerts
-#
+#!/usr/bin/env python3
+
+"""
+Author: Justin Lintz <jlintz@gmail.com>
+
+Module to control Philips Hue light bulbs
+based on Pager Duty alerts
+"""
 
 import sys
-import requests
 import logging
 from datetime import datetime
 from argparse import ArgumentParser
 from time import sleep
 from requests.exceptions import RequestException
+import requests
 from phue import Bridge
 
 logger = logging.getLogger('pager-huety')
@@ -26,10 +28,11 @@ def is_night_time(pm=21, am=7):
 
 
 class PagerHuety(object):
-
-    def __init__(self, api_key, company, hue_host):
+    """
+    Control Philips Hue light bulbs based on PagerDuty incident
+    """
+    def __init__(self, api_key, hue_host):
         self.api_key = api_key
-        self.company = company
         self.bridge = Bridge(hue_host)
         self._hue_host = hue_host
 
@@ -41,19 +44,21 @@ class PagerHuety(object):
         Returns:
             JSON object
         """
-        incidents_url = 'https://%s.pagerduty.com/api/v1/incidents' % self.company
-        headers = {'Authorization': 'Token token=%s' % self.api_key}
-        args = {'status': 'triggered'}
+        headers = { \
+            'Authorization': 'Token token={}'.format(self.api_key), \
+            'Accept': 'application/vnd.pagerduty+json;version=2' \
+        }
+        incidents_url = 'https://api.pagerduty.com/incidents?time_zone=UTC&status=triggered'
 
         if user_ids:
-            args['assigned_to_user'] = user_ids
+            incidents_url += '{}&user_ids%5B%5D={}'.format(incidents_url, user_ids)
 
         logger.info('Fetching pager duty incidents')
 
         try:
-            response = requests.get(incidents_url, data=args, headers=headers)
+            response = requests.get(incidents_url, headers=headers)
         except RequestException as e:
-            logger.exception('Error connecting to PagerDuty: %s' % e)
+            logger.exception('Error connecting to PagerDuty: %s', e)
             sys.exit(1)
 
         return response.json()
@@ -76,7 +81,7 @@ class PagerHuety(object):
         self.bridge.set_light(light_id, 'on', True)
 
         # blink red and blue
-        for x in range(0, 2):
+        for _ in range(0, 2):
             light.hue = red
             sleep(1.5)
             light.hue = blue
@@ -93,16 +98,17 @@ class PagerHuety(object):
 
 
 def main():
-    parser = ArgumentParser(
-        description='Trigger your Philips Hue lights via a Page Duty alert')
+    """
+    Control Philips Hue light bulbs on triggered PagerDuty incident
+    """
+
+    parser = ArgumentParser(description='Trigger your Philips Hue lights via a Page Duty alert')
     parser.add_argument('--pd-api-key', type=str, required=True,
                         help='API Key for pager duty')
-    parser.add_argument('--company', type=str, required=True,
-                        help='Company name used with Pager Duty (for API requests)')
     parser.add_argument('--hue-host', type=str, required=True,
                         help='Hostname of your Philips Hue Bridge')
     parser.add_argument('--lamp', type=int, default=3,
-                        help='Hostname of your Philips Hue Bridge')
+                        help='Numeric id of the lamp to flash')
     parser.add_argument('--night-only', action='store_true', default=False,
                         help='Will only flash lights between 9PM - 7AM')
     parser.add_argument('--user-filter', type=str,
@@ -125,7 +131,7 @@ def main():
     if args.test:
         logger.info('Running in TEST mode')
 
-    ph = PagerHuety(args.pd_api_key, args.company, args.hue_host)
+    ph = PagerHuety(args.pd_api_key, args.hue_host)
 
     if not is_night_time() and args.night_only and not args.test:
         logger.info('Night time only mode set, not running')
